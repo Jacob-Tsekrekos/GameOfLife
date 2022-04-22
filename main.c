@@ -4,6 +4,31 @@
 
 #define IN_FILE "0.matrix"
 #define OUT_FILE "1.matrix"
+
+/*
+Checks and returns count of alive/dead neighbors for givin cell
+
+usage: check_neighbors(cells, x, y)
+Parameters:
+    cells       - IN - the matrix
+    x           - IN - the X positon of the cell to check
+    y           - IN - the Y positon of the cell to check
+Returns:
+    neighbors           - OUT - a count of alive and dead neighbors(index 0 is for alive and index 1 is for dead)
+*/
+int* check_neighbors(Cell* cells, int x, int y){
+   static int neighbors[2];
+ 
+    for (int i = 0; i < 2; i++){
+        for (int t = 0; t < 2; t++){
+        
+    }
+
+    }
+
+   return neighbors;
+}
+
 // CHECK INDEXING!!!
 /*
 Read a matrix file containing initial data. 1 for alive, 0 for dead.
