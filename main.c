@@ -21,22 +21,25 @@ Returns:
 void check_neighbors(Cell* cells, int x, int y, int m, int n){
     static int neighbors[2];
     int alive = 0;
-    int dead = 0;
     int length = sizeof(cells)/sizeof(cells[0]);
     //Loops should check all eight neighbors of the cell starting at the bottom right, checking all in the row and moving up
     for (int i = 0; i < 2; i++){
         for (int t = 0; t < 2; t++){
             if ((x + 1 - t)*m + (y + 1 - i) < length && (t != 1 && i != 1){
-                if (cells[i*m + j].state == 1)
+                if (cells[(x + 1 - t)*m + (y + 1 - i)].state == 1)
                 {
                     alive++;
                 }
-                else
-                {
-                    dead++;
-                }
-                
             }
+        }
+    }
+    if(cells[(x)*m + (y)].state == 1){
+        if(alive != 2 || alive != 3){
+            cells[(x)*m + (y)].state = State.DEAD;
+        }
+    }else{
+        if(alive == 3){
+            cells[(x)*m + (y)].state = State.ALIVE;
         }
     }
 
