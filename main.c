@@ -1,7 +1,8 @@
 #include "definitions.h"
 #include <stdio.h>
 #include <stdlib.h>
-
+#include <math.h>
+#include <omp.h>
 #define IN_FILE "0.matrix"
 #define OUT_FILE "1.matrix"
 
@@ -33,6 +34,8 @@ void check_neighbors(Cell* cells, int x, int y, int m, int n){
             }
         }
     }
+
+    //Check rules
     if(cells[(x)*m + (y)].state == 1){
         if(alive != 2 || alive != 3){
             cells[(x)*m + (y)].state = State.DEAD;
@@ -106,8 +109,25 @@ void write_matrix(const char* filepath, int m, int n, Cell* cells){
 }
 
 int main(int argc, char* argv[]){
+    int NTHREADS = omp_get_num_threads();
+    int ITERATIONS = 3;
     int rows, cols;
     Cell* data = read_matrix("initial.matrix", &rows, &cols);
+    int length = sizeof(cells)/sizeof(cells[0]);
+    #pragma omp parallel
+    {
+    int ID = omp_get_thread_num();
+    int p=omp_get_num_threads();
+             
+    int div = ceil(length/p);
+
+    //make sub array
+
+    for(int i = 0; i<ITERATIONS; i++){
+        //check neigbours
+    }
+
+    }
 
     write_matrix("final.matrix", rows, cols, data);
 
