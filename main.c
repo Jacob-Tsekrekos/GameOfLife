@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <string.h>
 #include <omp.h>
 #define IN_FILE "0.matrix"
 #define OUT_FILE "1.matrix"
@@ -19,15 +20,16 @@ Parameters:
 Returns:
     neighbors           - OUT - a count of alive and dead neighbors(index 0 is for alive and index 1 is for dead)
 */
-void check_neighbors(Cell* cells, int x, int y, int m, int n){
-    static int neighbors[2];
+void check_neighbors(Cell* prev, Cell* curr, int x, int cols, int j){
+    curr = prev;
+    int i, t;
     int alive = 0;
-    int length = sizeof(cells)/sizeof(cells[0]);
+    int length = sizeof(prev)/sizeof(prev[0]);
     //Loops should check all eight neighbors of the cell starting at the bottom right, checking all in the row and moving up
-    for (int i = 0; i < 2; i++){
-        for (int t = 0; t < 2; t++){
-            if ((x + 1 - t)*m + (y + 1 - i) < length && (t != 1 && i != 1){
-                if (cells[(x + 1 - t)*m + (y + 1 - i)].state == 1)
+    for (i = 0; i < 2; i++){
+        for (t = 0; t < 2; t++){
+            if ((x + 1 - t)*cols + (j + 1 - i) < length && (t != 1 && i != 1)){
+                if (curr[(x + 1 - t)*cols + (j + 1 - i)].state == 1)
                 {
                     alive++;
                 }
@@ -36,13 +38,13 @@ void check_neighbors(Cell* cells, int x, int y, int m, int n){
     }
 
     //Check rules
-    if(cells[(x)*m + (y)].state == 1){
+    if(curr[(x)*cols + (j)].state == 1){
         if(alive != 2 || alive != 3){
-            cells[(x)*m + (y)].state = State.DEAD;
+            curr[(x)*cols + (j)].state = 0;
         }
     }else{
         if(alive == 3){
-            cells[(x)*m + (y)].state = State.ALIVE;
+            curr[(x)*cols + (j)].state = 1;
         }
     }
 
@@ -63,7 +65,7 @@ Returns:
 */
 Cell* read_matrix(const char* filepath, int* rows, int* cols){
     FILE *fp;
-    int m, n;
+    int m, n, i, j;
 
     fp = fopen(filepath, "r");
     fscanf(fp, "%d %d", rows, cols);
@@ -73,8 +75,8 @@ Cell* read_matrix(const char* filepath, int* rows, int* cols){
 
     Cell* cells = (Cell*) malloc(m * n * sizeof(Cell));
 
-    for (int i = 0; i < n; i++){
-        for (int j = 0; j < m; j++){
+    for (i = 0; i < n; i++){
+        for (j = 0; j < m; j++){
 
             fscanf(fp, "%d", (int*) &cells[i*m + j].state);
             cells[i*m + j].x = i;
@@ -96,12 +98,13 @@ Parameters:
     cells       - IN - the matrix
 */
 void write_matrix(const char* filepath, int m, int n, Cell* cells){
+    int i, j;
     FILE *fp;
     fp = fopen(filepath, "w");
     fprintf(fp, "%d %d\n", m, n);
 
-    for (int i = 0; i < n; i++){
-        for (int j = 0; j < m; j++){
+    for (i = 0; i < n; i++){
+        for (j = 0; j < m; j++){
             fprintf(fp, "%d ", cells[i*m + j].state);
         }
         fprintf(fp, "\n");
@@ -111,11 +114,14 @@ void write_matrix(const char* filepath, int m, int n, Cell* cells){
 int main(int argc, char* argv[]){
     int NTHREADS = omp_get_num_threads();
     int ITERATIONS = 3;
-    int rows, cols;
-    Cell* data = read_matrix("initial.matrix", &rows, &cols);
-    int length = sizeof(cells)/sizeof(cells[0]);
-    #pragma omp parallel
-    {
+    int rows, cols, iter, i, j;
+    char intToString[2];//for converting int to strong
+    char outPath[] = ".out";
+    Cell* previous = read_matrix("initial.matrix", &rows, &cols);
+    Cell* current = (Cell*) malloc(rows * cols * sizeof(Cell));
+    Cell* temp = (Cell*) malloc(rows * cols * sizeof(Cell));
+    int length = sizeof(previous)/sizeof(previous[0]);
+    
     int ID = omp_get_thread_num();
     int p=omp_get_num_threads();
              
@@ -123,13 +129,27 @@ int main(int argc, char* argv[]){
 
     //make sub array
 
-    for(int i = 0; i<ITERATIONS; i++){
-        //check neigbours
+    for(iter = 0; iter<ITERATIONS; iter++){
+    #pragma omp parallel for collapse(2)
+        for (i = 0; i < rows; i++){
+            for (j = 0; j < cols; j++){
+                check_neighbors(previous, current, i, cols, j);
+            }
+        }
+        temp = previous;
+        previous = current;
+        current = temp;
+        char output[] = "out/final";
+        sprintf(intToString, "%d", iter);
+        strcat(output,intToString);
+        strcat(output,outPath);
+        write_matrix(output, rows, cols, current);
     }
 
-    }
+    
+    
 
-    write_matrix("final.matrix", rows, cols, data);
+    write_matrix("final.matrix", rows, cols, current);
 
     return 0;
 }
