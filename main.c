@@ -6,22 +6,34 @@
 #include <omp.h>
 
 
+/*
+identify if coords are valid within matrix
+
+usage: is_valid(x, y, rows, cols)
+Parameters:
+    x           - IN - the X positon of the cell to check
+    y           - IN - the Y positon of the cell to check
+    cols           - IN - the width of the matrix
+    rows           - IN - the height of the matrix
+Returns:
+    True - if coords are within the matrix
+    False - if coords are outside of matrix 
+*/
 int is_valid(int x, int y, int rows, int cols){
     return 0 <= x && x < rows && 0 <= y && y <= cols; 
 }
 
 /*
-Checks and returns count of alive/dead neighbors for givin cell
+Checks and updates cells that are to remain alive, become alive, stay dead, or become dead
 
-usage: check_neighbors(cells, x, y)
+usage: check_neighbors(previous, current, i, j, cols, rows);
 Parameters:
-    cells       - IN - the matrix
+    prev       - IN - the matrix
+    curr       - IN - the matrix
     x           - IN - the X positon of the cell to check
     y           - IN - the Y positon of the cell to check
-    m           - IN - the width of the matrix
-    n           - IN - the height of the matrix
-Returns:
-    neighbors           - OUT - a count of alive and dead neighbors(index 0 is for alive and index 1 is for dead)
+    cols           - IN - the width of the matrix
+    rows           - IN - the height of the matrix
 */
 void check_neighbors(Cell* prev, Cell* curr, int x, int y, int cols, int rows){
     int id = omp_get_thread_num();
@@ -50,7 +62,6 @@ void check_neighbors(Cell* prev, Cell* curr, int x, int y, int cols, int rows){
     return;
 }
 
-// CHECK INDEXING!!!
 /*
 Read a matrix file containing initial data. 1 for alive, 0 for dead.
 
