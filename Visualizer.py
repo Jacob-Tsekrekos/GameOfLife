@@ -2,16 +2,13 @@
 Assumes all matrices are the same size.
 
 """
-
+# Note: PIL needs to have the memory in the numpy array be exact. So uint8 type is used to make the bytes line up
 import numpy as np
 import os
 from PIL import Image
 
-
-WANTED = "GliderGun"
-# Note: PIL needs to have the memory in the numpy array be exact. So uint8 type is used to make the bytes line up
-import sys
-np.set_printoptions(threshold=sys.maxsize)
+BASENAME = "final"
+NUM_FRAMES = 10
 
 INPUT_DIR = "./out/"
 OUTPUT_DIR = "./frames/"
@@ -43,10 +40,8 @@ def matrix_to_frame(matrix: Matrix) -> Image:
 
 gif: list[Image] = []
 
-for file in os.listdir(INPUT_DIR):
-    if WANTED not in file:
-        continue
-    with open(INPUT_DIR + file, "r") as fp:
+for i in range(NUM_FRAMES):
+    with open(f"{INPUT_DIR}{BASENAME}{i}.matrix", "r") as fp:
         matrix = load_matrix(fp)
         gif.append(matrix_to_frame(matrix))
 

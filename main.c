@@ -5,9 +5,9 @@
 #include <string.h>
 #include <omp.h>
 
-#define IN_FILE "Glider.matrix"
-#define OUT_NAME "out/Glider"
-#define ITERATIONS 100
+#define IN_FILE "inputs/glider.matrix"
+#define OUT_NAME "out/final"
+#define ITERATIONS 10
 
 
 /*
@@ -40,10 +40,9 @@ Parameters:
     rows           - IN - the height of the matrix
 */
 void check_neighbors(Cell* prev, Cell* curr, int x, int y, int cols, int rows){
-    int id = omp_get_thread_num();
+    // int id = omp_get_thread_num();
     int i, j, index, nx, ny;
     int alive = 0;
-    int length = cols * rows;
     //Loops should check all eight neighbors of the cell starting at the bottom right, checking all in the row and moving up
     for (i = -1; i <= 1; i++){
         for (j = -1; j <= 1; j++){
@@ -52,10 +51,11 @@ void check_neighbors(Cell* prev, Cell* curr, int x, int y, int cols, int rows){
             index = nx*cols + ny;
 
             if (is_valid(nx, ny, rows, cols) && !(j == 0 && i == 0)){
-                alive += (prev[index].state == DEAD)?0:1; // Relies on ALIVE being 1, dead being 0
+                alive += (prev[index].state == DEAD)?0:1;
             }
         }
     }
+    // printf("%d ", alive);
 
     // Check rules
     if(prev[x*cols + y].state == ALIVE){
@@ -165,20 +165,24 @@ int main(int argc, char* argv[]){
     Cell* previous = read_matrix(IN_FILE, &rows, &cols);
     Cell* current = (Cell*) malloc(rows * cols * sizeof(Cell));
     Cell* temp;
-    
+
     get_name(0, outpath);
-    write_matrix(outpath, rows, cols, previous);
+    write_matrix(outpath, cols, rows, previous);
 
     for(iter = 1; iter <= ITERATIONS; iter++){
+        // printf("ITER %d:\n", iter);
+        // print_matrix(cols, rows, previous);
+        // printf("\n");
         #pragma omp parallel for collapse(2)
         for (i = 0; i < rows; i++){
             for (j = 0; j < cols; j++){
                 check_neighbors(previous, current, i, j, cols, rows);
             }
+            // printf("\n");
         }
     
         get_name(iter, outpath);
-        write_matrix(outpath, rows, cols, current);
+        write_matrix(outpath, cols, rows, current);
 
         temp = previous;
         previous = current;
