@@ -5,6 +5,10 @@
 #include <string.h>
 #include <omp.h>
 
+#define IN_FILE "Glider.matrix"
+#define OUT_NAME "out/Glider"
+#define ITERATIONS 100
+
 
 /*
 identify if coords are valid within matrix
@@ -134,21 +138,38 @@ void print_matrix(int m, int n, Cell* cells){
 
 }
 
-int main(int argc, char* argv[]){
-    int ITERATIONS = 3;
-    int rows, cols, iter, i, j;
-    char intToString[2];//for converting int to string
-    char outPath[100] = ".out";
+/*
+Generate a file name given the iteration number
 
-    Cell* previous = read_matrix("initial.matrix", &rows, &cols);
+usage: get_name(iter, filename)
+Parameters:
+    iter       - IN  - the suffix of the file
+    filename   - OUT - An empty buffer
+Results:
+    filename holds a generated file name
+*/
+void get_name(int iter, char* filename){
+    filename[0] = 0; // Clear the buffer
+    char str_int[9]; // Means that at most 10^8 iterations can be done before buffer overflow
+    sprintf(filename, OUT_NAME);
+    sprintf(str_int, "%d", iter);
+    strcat(filename, str_int);
+    strcat(filename, ".matrix");
+}
+
+
+int main(int argc, char* argv[]){
+    int rows, cols, iter, i, j;
+    char outpath[100];
+
+    Cell* previous = read_matrix(IN_FILE, &rows, &cols);
     Cell* current = (Cell*) malloc(rows * cols * sizeof(Cell));
     Cell* temp;
+    
+    get_name(0, outpath);
+    write_matrix(outpath, rows, cols, previous);
 
-    //make sub array
-
-    for(iter = 0; iter < ITERATIONS; iter++){
-        // printf("iter %d:\n", iter);
-        // print_matrix(rows, cols, previous);
+    for(iter = 1; iter <= ITERATIONS; iter++){
         #pragma omp parallel for collapse(2)
         for (i = 0; i < rows; i++){
             for (j = 0; j < cols; j++){
@@ -156,17 +177,15 @@ int main(int argc, char* argv[]){
             }
         }
     
-        char output[100] = "out/final";
-        sprintf(intToString, "%d", iter);
-        strcat(output,intToString);
-        strcat(output,outPath);
-        write_matrix(output, rows, cols, current);
+        get_name(iter, outpath);
+        write_matrix(outpath, rows, cols, current);
 
         temp = previous;
         previous = current;
         current = temp;
     }
 
-    // write_matrix("final.matrix", rows, cols, current);
+    free(previous);
+    free(current);
     return 0;
 }
