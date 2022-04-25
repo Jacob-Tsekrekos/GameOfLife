@@ -4,8 +4,11 @@
 #include <math.h>
 #include <string.h>
 #include <omp.h>
-#define IN_FILE "0.matrix"
-#define OUT_FILE "1.matrix"
+
+
+int is_valid(int x, int y, int rows, int cols){
+    return 0 <= x && x < rows && 0 <= y && y <= cols; 
+}
 
 /*
 Checks and returns count of alive/dead neighbors for givin cell
@@ -20,35 +23,31 @@ Parameters:
 Returns:
     neighbors           - OUT - a count of alive and dead neighbors(index 0 is for alive and index 1 is for dead)
 */
-void check_neighbors(Cell* prev, Cell* curr, int x, int cols, int j){
-    curr = prev;
-    int i, t;
+void check_neighbors(Cell* prev, Cell* curr, int x, int y, int cols, int rows){
+    int id = omp_get_thread_num();
+    int i, j, index, nx, ny;
     int alive = 0;
-    int length = sizeof(prev)/sizeof(prev[0]);
+    int length = cols * rows;
     //Loops should check all eight neighbors of the cell starting at the bottom right, checking all in the row and moving up
-    for (i = 0; i < 2; i++){
-        for (t = 0; t < 2; t++){
-            if ((x + 1 - t)*cols + (j + 1 - i) < length && (t != 1 && i != 1)){
-                if (curr[(x + 1 - t)*cols + (j + 1 - i)].state == 1)
-                {
-                    alive++;
-                }
+    for (i = -1; i <= 1; i++){
+        for (j = -1; j <= 1; j++){
+            nx = (x - i);
+            ny = (y - j);
+            index = nx*cols + ny;
+
+            if (is_valid(nx, ny, rows, cols) && !(j == 0 && i == 0)){
+                alive += (prev[index].state == DEAD)?0:1; // Relies on ALIVE being 1, dead being 0
             }
         }
     }
 
-    //Check rules
-    if(curr[(x)*cols + (j)].state == 1){
-        if(alive != 2 || alive != 3){
-            curr[(x)*cols + (j)].state = 0;
-        }
+    // Check rules
+    if(prev[x*cols + y].state == ALIVE){
+        curr[x*cols + y].state = (alive == 2 || alive == 3);
     }else{
-        if(alive == 3){
-            curr[(x)*cols + (j)].state = 1;
-        }
+        curr[x*cols + y].state = alive == 3;
     }
-
-   return;
+    return;
 }
 
 // CHECK INDEXING!!!
@@ -111,45 +110,52 @@ void write_matrix(const char* filepath, int m, int n, Cell* cells){
     }
 }
 
+
+void print_matrix(int m, int n, Cell* cells){
+    int i, j;
+
+    for (i = 0; i < n; i++){
+        for (j = 0; j < m; j++){
+            printf("%d ", cells[i*m + j].state);
+        }
+        printf("\n");
+    }
+
+}
+
 int main(int argc, char* argv[]){
-    int NTHREADS = omp_get_num_threads();
     int ITERATIONS = 3;
     int rows, cols, iter, i, j;
-    char intToString[2];//for converting int to strong
-    char outPath[] = ".out";
+    char intToString[2];//for converting int to string
+    char outPath[100] = ".out";
+
     Cell* previous = read_matrix("initial.matrix", &rows, &cols);
     Cell* current = (Cell*) malloc(rows * cols * sizeof(Cell));
-    Cell* temp = (Cell*) malloc(rows * cols * sizeof(Cell));
-    int length = sizeof(previous)/sizeof(previous[0]);
-    
-    int ID = omp_get_thread_num();
-    int p=omp_get_num_threads();
-             
-    int div = ceil(length/p);
+    Cell* temp;
 
     //make sub array
 
-    for(iter = 0; iter<ITERATIONS; iter++){
-    #pragma omp parallel for collapse(2)
+    for(iter = 0; iter < ITERATIONS; iter++){
+        // printf("iter %d:\n", iter);
+        // print_matrix(rows, cols, previous);
+        #pragma omp parallel for collapse(2)
         for (i = 0; i < rows; i++){
             for (j = 0; j < cols; j++){
-                check_neighbors(previous, current, i, cols, j);
+                check_neighbors(previous, current, i, j, cols, rows);
             }
         }
-        temp = previous;
-        previous = current;
-        current = temp;
-        char output[] = "out/final";
+    
+        char output[100] = "out/final";
         sprintf(intToString, "%d", iter);
         strcat(output,intToString);
         strcat(output,outPath);
         write_matrix(output, rows, cols, current);
+
+        temp = previous;
+        previous = current;
+        current = temp;
     }
 
-    
-    
-
-    write_matrix("final.matrix", rows, cols, current);
-
+    // write_matrix("final.matrix", rows, cols, current);
     return 0;
 }
